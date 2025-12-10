@@ -26,6 +26,13 @@ graph LR
     end
 ```
 
+## 👨‍💻 Author
+**Achu**
+*(Originally forked, rewriten and enhanced by Achu)*
+
+## 📜 License
+MIT
+
 ---
 
 ## ✨ Features
@@ -37,7 +44,17 @@ graph LR
 -   **Persistent Logging**: Full trade history stored in a MariaDB database.
 -   **Robust Logic**: 
     -   **Mean Reversal**: 4H RSI Extremes + SuperTrend Confirmation + High ADX -> Limit Order.
-    -   **TMA System**: Triple Moving Average Trend + CMO Pullbacks + ADX Strength.
+    -   **TMA System**:
+### 3. GOLD DEMASuTBB (New)
+A specialized strategy for XAUUSD (GOLD) utilizing DEMA, SuperTrend, and Bollinger Bands.
+- **Trend Filter**: 200 DEMA (Double Exponential Moving Average).
+- **Signal**: SuperTrend (12, 3).
+- **Exit**: Bollinger Bands (20, 2) Touch OR SuperTrend Flip.
+- **Safety**: "Secret Tip" logic prevents entering if price is already at the Band extremes (overbought/oversold).
+- **Timeframes**: 45m, 15m, 5m concurrently.
+
+### 4. TMA (Triangular Moving Average)
+ Trend + CMO Pullbacks + ADX Strength.
 
 ---
 

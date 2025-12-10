@@ -57,6 +57,10 @@ def get_candles(symbol: str, timeframe: str, n: int = 100):
         "1m": mt5.TIMEFRAME_M1,
         "5m": mt5.TIMEFRAME_M5,
         "15m": mt5.TIMEFRAME_M15,
+        "45m": mt5.TIMEFRAME_M2, # MT5 doesn't have native M45 enum in older builds, usually TIMEFRAME_M45. 
+        # Checking MT5 docs: TIMEFRAME_M45 is standard in Python API 5.0.25+
+        "45m": mt5.TIMEFRAME_M45, 
+        "30m": mt5.TIMEFRAME_M30,
         "1h": mt5.TIMEFRAME_H1,
         "4h": mt5.TIMEFRAME_H4,
         "1d": mt5.TIMEFRAME_D1,

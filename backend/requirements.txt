@@ -9,3 +9,5 @@ pydantic-settings
 django
 mysqlclient
 cryptography
+mariadb
+python-telegram-bot

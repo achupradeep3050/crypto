@@ -15,6 +15,7 @@ from backend.config import settings
 
 
 from strategy.TMA.tma_strategy import TMAStrategy
+from strategy.DEMASuTBB.demasutbb_strategy import DEMASuTBBStrategy
 import os
 from datetime import datetime
 
@@ -24,6 +25,11 @@ from datetime import datetime
 engine_swing = StrategyEngine(name="SWING", mode="4H1H", log_file="logs/4H1H/trading.log")
 engine_scalp = StrategyEngine(name="SCALP", mode="15m1m", log_file="logs/15m1m/trading.log")
 engine_tma = StrategyEngine(name="TMA", mode="4H15m", log_file="logs/TMA/trading.log", strategy_class=TMAStrategy)
+
+# GOLD Strategies
+engine_gold_45m = StrategyEngine(name="GOLD_45m", mode="GOLD_45m", log_file="logs/GOLD/45m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
+engine_gold_15m = StrategyEngine(name="GOLD_15m", mode="GOLD_15m", log_file="logs/GOLD/15m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
+engine_gold_5m = StrategyEngine(name="GOLD_5m", mode="GOLD_5m", log_file="logs/GOLD/5m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
 
 # Global loop controller
 loop_active = True
@@ -47,6 +53,12 @@ async def bot_background_loop():
             tasks.append(engine_scalp.run_loop())
         if engine_tma.active:
             tasks.append(engine_tma.run_loop())
+        if engine_gold_45m.active:
+            tasks.append(engine_gold_45m.run_loop())
+        if engine_gold_15m.active:
+            tasks.append(engine_gold_15m.run_loop())
+        if engine_gold_5m.active:
+            tasks.append(engine_gold_5m.run_loop())
             
         if tasks:
             await asyncio.gather(*tasks)
@@ -112,6 +124,9 @@ async def test_trade(req: TestTradeRequest):
     if req.strategy.lower() == "swing": target_engine = engine_swing
     elif req.strategy.lower() == "scalp": target_engine = engine_scalp
     elif req.strategy.lower() == "tma": target_engine = engine_tma
+    elif req.strategy.lower() == "gold_45m": target_engine = engine_gold_45m
+    elif req.strategy.lower() == "gold_15m": target_engine = engine_gold_15m
+    elif req.strategy.lower() == "gold_5m": target_engine = engine_gold_5m
     
     if target_engine:
         async with aiohttp.ClientSession() as session:
@@ -180,6 +195,11 @@ def get_status():
             "market_data": engine_tma.market_data,
             "logs": engine_tma.logs[:20]
         },
+        "gold": {
+            "45m": {"active": engine_gold_45m.active, "status": engine_gold_45m.status, "data": engine_gold_45m.market_data, "logs": engine_gold_45m.logs[:5]},
+            "15m": {"active": engine_gold_15m.active, "status": engine_gold_15m.status, "data": engine_gold_15m.market_data, "logs": engine_gold_15m.logs[:5]},
+            "5m": {"active": engine_gold_5m.active, "status": engine_gold_5m.status, "data": engine_gold_5m.market_data, "logs": engine_gold_5m.logs[:5]},
+        },
         "account": engine_swing.account_info, # Sharing account info
         "config": {
             "agent_url": engine_swing.agent_url,
@@ -197,6 +217,10 @@ async def control_bot(req: ControlRequest):
             engine_scalp.start()
         if req.target in ["tma", "all"]:
             engine_tma.start()
+        if req.target in ["gold", "all"]:
+            engine_gold_45m.start()
+            engine_gold_15m.start()
+            engine_gold_5m.start()
             
     elif req.action == "stop":
         if req.target in ["swing", "all"]:
@@ -205,18 +229,52 @@ async def control_bot(req: ControlRequest):
             engine_scalp.stop()
         if req.target in ["tma", "all"]:
             engine_tma.stop()
+        if req.target in ["gold", "all"]:
+            engine_gold_45m.stop()
+            engine_gold_15m.stop()
+            engine_gold_5m.stop()
             
     return {"status": "ok"}
 
 
+def update_env_file(key, value):
+    env_path = ".env"
+    lines = []
+    found = False
+    
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            lines = f.readlines()
+            
+    with open(env_path, "w") as f:
+        for line in lines:
+            if line.startswith(f"{key}="):
+                f.write(f"{key}=\"{value}\"\n")
+                found = True
+            else:
+                f.write(line)
+        if not found:
+            f.write(f"{key}=\"{value}\"\n")
+
 @app.post("/api/settings")
 def update_settings(req: SettingsRequest):
+    # 1. Update In-Memory Config (Immediate Effect)
     engine_swing.set_agent_url(req.agent_url)
     engine_scalp.set_agent_url(req.agent_url)
     engine_tma.set_agent_url(req.agent_url) 
+    engine_gold_45m.set_agent_url(req.agent_url)
+    engine_gold_15m.set_agent_url(req.agent_url)
+    engine_gold_5m.set_agent_url(req.agent_url)
     settings.RISK_PERCENT = req.risk
+    settings.AGENT_URL = req.agent_url # Update pydantic model too
+
+    # 2. Persist to .env File
+    update_env_file("AGENT_URL", req.agent_url)
+    # Persisting RISK is optional but good practice if needed, focusing on IP per request
+    # update_env_file("RISK_PERCENT", str(req.risk))
+
     engine_swing.log(f"Settings updated: Agent={req.agent_url}")
-    return {"status": "updated"}
+    return {"status": "updated", "persisted": True}
 
 if __name__ == "__main__":
     import uvicorn

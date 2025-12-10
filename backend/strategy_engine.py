@@ -108,7 +108,7 @@ class StrategyEngine:
             # self.log(f"Connection error fetching {symbol}: {str(e)}")
             return None
 
-    async def execute_trade(self, session, symbol, signal, entry, sl, tp, order_type="limit"):
+    async def execute_trade(self, session, symbol, signal, entry, sl, tp, order_type="market"):
         # 1. Get Account Balance
         balance = 0.0
         try:

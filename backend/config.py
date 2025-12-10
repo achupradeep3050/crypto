@@ -11,7 +11,10 @@ class Settings(BaseSettings):
     MODES: dict = {
         "4H1H": {"current": "1h", "higher": "4h"},
         "15m1m": {"current": "1m", "higher": "15m"},
-        "4H15m": {"current": "15m", "higher": "4h"}
+        "4H15m": {"current": "15m", "higher": "4h"},
+        "GOLD_45m": {"current": "45m", "higher": None}, # Single timeframe strategy
+        "GOLD_15m": {"current": "15m", "higher": None},
+        "GOLD_5m": {"current": "5m", "higher": None}
     }
     
     # Defaults (can be removed if unused, but keeping for safety)
