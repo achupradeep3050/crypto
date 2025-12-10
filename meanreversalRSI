@@ -1,0 +1,112 @@
+from jesse.strategies import Strategy
+import jesse.indicators as ta
+from jesse import utils
+
+class MeanReversionRSI(Strategy):
+    @property
+    def higher_timeframe_candles(self):
+        return self.get_candles(self.exchange, self.symbol, '4h')
+    
+    @property
+    def rsi_higher(self):
+        return ta.rsi(self.higher_timeframe_candles)
+    
+    @property
+    def trend(self):
+        s = ta.supertrend(self.higher_timeframe_candles)
+        if self.price > s.trend:
+            return 1
+        else:
+            return -1
+    
+    @property
+    def adx(self):
+        return ta.adx(self.candles)
+    
+    @property
+    def adx_higher(self):
+        return ta.adx(self.higher_timeframe_candles)
+    
+    @property
+    def bb(self):
+        return ta.bollinger_bands(self.candles)
+    
+    @property
+    def atr(self):
+        return ta.atr(self.candles)
+    
+    def should_long(self) -> bool:
+        # Long when RSI on higher timeframe is above 70
+        # Supertrend on higher timeframe is in uptrend (1)
+        # ADX on current timeframe is above 20
+        # ADX on higher timeframe is above 40
+        return (
+            self.rsi_higher > 70 and 
+            self.trend == 1 and 
+            self.adx > 20 and 
+            self.adx_higher > 40
+        )
+    
+    def should_short(self) -> bool:
+        # Short when RSI on higher timeframe is below 30
+        # Supertrend on higher timeframe is in downtrend (-1)
+        # ADX on current timeframe is above 20
+        # ADX on higher timeframe is above 40
+        return (
+            self.rsi_higher < 30 and 
+            self.trend == -1 and 
+            self.adx > 20 and 
+            self.adx_higher > 40
+        )
+    
+    def go_long(self):
+        # Use Bollinger Bands lower band as entry point (limit order)
+        entry_price = self.bb.lowerband
+        stop_loss_price = entry_price - (self.atr * 6)
+        
+        # Risk 3% of account per trade
+        qty = utils.risk_to_qty(self.available_margin, 3, entry_price, stop_loss_price, fee_rate=self.fee_rate)
+        
+        self.buy = qty*5, entry_price
+    
+    def go_short(self):
+        # Use Bollinger Bands upper band as entry point (limit order)
+        entry_price = self.bb.upperband
+        stop_loss_price = entry_price + (self.atr * 6)
+        
+        # Risk 3% of account per trade
+        qty = utils.risk_to_qty(self.available_margin, 3, entry_price, stop_loss_price, fee_rate=self.fee_rate)
+        
+        self.sell = qty*5, entry_price
+    
+    def on_open_position(self, order):
+        # Set stop loss and take profit when position is opened
+        if self.is_long:
+            # Stop loss at entry price minus 6 ATR
+            self.stop_loss = self.position.qty, self.position.entry_price - (self.atr * 6)
+            # Take profit at upper band of Bollinger Bands
+            self.take_profit = self.position.qty, self.bb.upperband
+        
+        elif self.is_short:
+            # Stop loss at entry price plus 6 ATR
+            self.stop_loss = self.position.qty, self.position.entry_price + (self.atr * 6)
+            # Take profit at lower band of Bollinger Bands
+            self.take_profit = self.position.qty, self.bb.lowerband
+    
+    def should_cancel_entry(self) -> bool:
+        return True
+        
+    def watch_list(self) -> list:
+        return [
+            ('RSI 4H', self.rsi_higher),
+            ('Trend', self.trend),
+            ('ADX', self.adx),
+            ('ADX 4H', self.adx_higher),
+            ('BB Upper', self.bb.upperband),
+            ('BB Middle', self.bb.middleband),
+            ('BB Lower', self.bb.lowerband),
+            ('ATR', self.atr),
+            ('Long Signal', self.should_long()),
+            ('Short Signal', self.should_short()),
+            ('BBW', self.bbw)
+        ]

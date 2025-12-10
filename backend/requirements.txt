@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pandas
+pandas_ta
+aiohttp
+jinja2
+pydantic
+pydantic-settings
+django
+mysqlclient
+cryptography
