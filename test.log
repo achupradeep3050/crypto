@@ -1,0 +1,5 @@
+2025-12-10 16:50:32,226 - [TestBot] - Could not fetch balance. Using default 0.
+2025-12-10 16:50:32,226 - [TestBot] - Sending Order BTCUSD (market): Price=50000.0, SL=49000.0, TP=52000.0
+2025-12-10 16:50:32,227 - [TestBot] - Order Sent! BTCUSD long @ 50000 Qty: 0.1
+2025-12-10 16:50:33,477 - [TestBot] - Sending Order BTCUSD (market): Price=50000.0, SL=49000.0, TP=52000.0
+2025-12-10 16:50:33,477 - [TestBot] - Order Sent! BTCUSD long @ 50000 Qty: 0.1

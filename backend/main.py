@@ -8,28 +8,56 @@ import asyncio
 from contextlib import asynccontextmanager
 import logging
 import aiohttp
+import pandas as pd
 
 
 from backend.strategy_engine import StrategyEngine
 from backend.config import settings
+from backend.backtest_engine import BacktestEngine
 
 
-from strategy.TMA.tma_strategy import TMAStrategy
-from strategy.DEMASuTBB.demasutbb_strategy import DEMASuTBBStrategy
+# from strategy.TMA.tma_strategy import TMAStrategy - REMOVED
+# from strategy.mean_reversion import MeanReversionRSI - REMOVED
+from strategy.BitcoinBreakout.bitcoin_breakout import BitcoinBreakout
 import os
 from datetime import datetime
 
 
 
-# Instantiate Dual Engines
-engine_swing = StrategyEngine(name="SWING", mode="4H1H", log_file="logs/4H1H/trading.log")
-engine_scalp = StrategyEngine(name="SCALP", mode="15m1m", log_file="logs/15m1m/trading.log")
-engine_tma = StrategyEngine(name="TMA", mode="4H15m", log_file="logs/TMA/trading.log", strategy_class=TMAStrategy)
 
-# GOLD Strategies
-engine_gold_45m = StrategyEngine(name="GOLD_45m", mode="GOLD_45m", log_file="logs/GOLD/45m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
-engine_gold_15m = StrategyEngine(name="GOLD_15m", mode="GOLD_15m", log_file="logs/GOLD/15m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
-engine_gold_5m = StrategyEngine(name="GOLD_5m", mode="GOLD_5m", log_file="logs/GOLD/5m.log", strategy_class=DEMASuTBBStrategy, symbols=["GOLD"])
+# Instantiate Strategies
+
+# 1. MEAN REVERSION (REMOVED)
+# 2. TMA SYSTEM (REMOVED)
+
+# 3. BITCOIN BREAKOUT (New High ROI)
+engine_btc_breakout_5m = StrategyEngine(name="BTC_BREAKOUT_5M", mode="BTC_BREAKOUT_5M", log_file="logs/Breakout/5m.log", strategy_class=BitcoinBreakout, symbols=["BITCOIN"])
+
+# 4. GOLD Strategies (Existing)
+# 4. GOLD Strategies (New High Performance)
+from strategy.Gold.gold_trend import GoldTrend
+from strategy.Gold.gold_flux import GoldFlux
+from strategy.Gold.gold_sniper import GoldSniper
+
+engine_gold_1h = StrategyEngine(name="GOLD_1H", mode="GOLD_1H", log_file="logs/GOLD/1h.log", strategy_class=GoldTrend, symbols=["GOLD"])
+
+# Gold Sniper (High Precision, Mean Reversion)
+engine_gold_15m = StrategyEngine(
+    name="GOLD_SNIPER_15m",
+    mode="GOLD_15M",
+    log_file="logs/GOLD/sniper_15m.log",
+    strategy_class=GoldSniper, 
+    symbols=["GOLD"]
+)
+
+# Gold Flux (Momentum Scalp) - Keeping as secondary
+engine_gold_5m = StrategyEngine(
+    name="GOLD_FLUX_5M",
+    mode="GOLD_5M",
+    log_file="logs/GOLD/flux_5m.log",
+    strategy_class=GoldFlux, 
+    symbols=["GOLD"]
+)
 
 # Global loop controller
 loop_active = True
@@ -38,27 +66,24 @@ async def monitor_account():
     '''Independent loop to fetch account info regardless of strategy status'''
     while loop_active:
         async with aiohttp.ClientSession() as session:
-             # Use Swing Engine logic to update its account info, which is shared
-             # Or better, just call engine_swing.update_account_info(session)
-             # We rely on engine_swing to hold the "Master" account info.
-             await engine_swing.update_account_info(session)
+             # Use one engine to update account info (Shared)
+             await engine_btc_breakout_5m.update_account_info(session)
         await asyncio.sleep(5)
 
 async def bot_background_loop():
     while loop_active:
         tasks = []
-        if engine_swing.active:
-            tasks.append(engine_swing.run_loop())
-        if engine_scalp.active:
-            tasks.append(engine_scalp.run_loop())
-        if engine_tma.active:
-            tasks.append(engine_tma.run_loop())
-        if engine_gold_45m.active:
-            tasks.append(engine_gold_45m.run_loop())
-        if engine_gold_15m.active:
-            tasks.append(engine_gold_15m.run_loop())
-        if engine_gold_5m.active:
-            tasks.append(engine_gold_5m.run_loop())
+        # Mean Reversion REMOVED
+        
+        # TMA REMOVED
+        
+        # Bitcoin Breakout
+        if engine_btc_breakout_5m.active: tasks.append(engine_btc_breakout_5m.run_loop())
+
+        # Gold
+        if engine_gold_1h.active: tasks.append(engine_gold_1h.run_loop())
+        if engine_gold_15m.active: tasks.append(engine_gold_15m.run_loop())
+        if engine_gold_5m.active: tasks.append(engine_gold_5m.run_loop())
             
         if tasks:
             await asyncio.gather(*tasks)
@@ -70,13 +95,29 @@ async def lifespan(app: FastAPI):
     # Startup
     asyncio.create_task(bot_background_loop())
     asyncio.create_task(monitor_account())
+    
     yield
+    
     # Shutdown
+    print("[SYSTEM] Shutting Down...")
     global loop_active
     loop_active = False
-
+    task.cancel()
 
 app = FastAPI(lifespan=lifespan)
+
+# Enable CORS for Django Frontend (Port 8000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000", "http://127.00.1:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="web_dashboard/core/static"), name="static")
+templates = Jinja2Templates(directory="web_dashboard/core/templates/core")
 
 # Client Logging Endpoint
 class ClientLogRequest(BaseModel):
@@ -93,18 +134,39 @@ async def client_log(req: ClientLogRequest):
         f.write(f"[{timestamp}] [{req.level.upper()}] {req.message} | Context: {req.context}\n")
     return {"status": "logged"}
 
+class AgentLogRequest(BaseModel):
+    level: str
+    message: str
+    context: dict = {}
+
+@app.post("/api/agent/log")
+async def agent_log(req: AgentLogRequest):
+    log_file = "logs/agent_remote.log"
+    os.makedirs("logs", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] [{req.level.upper()}] {req.message} | Context: {req.context}\n"
+    
+    # Write to file
+    with open(log_file, "a") as f:
+        f.write(log_entry)
+        
+    # Also print to console for immediate visibility
+    print(f"xx [AGENT] {log_entry.strip()}")
+    
+    return {"status": "logged"}
+
 # Enable CORS for Django Frontend (Port 8000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=["http://localhost:8000", "http://127.00.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
-templates = Jinja2Templates(directory="frontend/templates")
+app.mount("/static", StaticFiles(directory="web_dashboard/core/static"), name="static")
+templates = Jinja2Templates(directory="web_dashboard/core/templates/core")
 
 class ControlRequest(BaseModel):
     action: str
@@ -121,16 +183,18 @@ class TestTradeRequest(BaseModel):
 @app.post("/api/test_trade")
 async def test_trade(req: TestTradeRequest):
     target_engine = None
-    if req.strategy.lower() == "swing": target_engine = engine_swing
-    elif req.strategy.lower() == "scalp": target_engine = engine_scalp
-    elif req.strategy.lower() == "tma": target_engine = engine_tma
-    elif req.strategy.lower() == "gold_45m": target_engine = engine_gold_45m
-    elif req.strategy.lower() == "gold_15m": target_engine = engine_gold_15m
-    elif req.strategy.lower() == "gold_5m": target_engine = engine_gold_5m
+    # Update logic to match new engines
+    s = req.strategy.lower()
+    if s == "mr_1h": pass
+    elif s == "gold_1h": target_engine = engine_gold_1h
+    elif s == "gold_15m": target_engine = engine_gold_15m
+    elif s == "gold_5m": target_engine = engine_gold_5m
+    elif s == "btc_breakout_5m": target_engine = engine_btc_breakout_5m
     
     if target_engine:
         async with aiohttp.ClientSession() as session:
             # 1. Fetch Real Price
+            # Use engine's configured current timeframe or just 1m for price check
             df = await target_engine.fetch_candles(session, req.symbol, "1m")
             if df is None or df.empty:
                 return {"status": "error", "message": f"Could not fetch price for {req.symbol}"}
@@ -164,7 +228,13 @@ class SettingsRequest(BaseModel):
 
 @app.get("/")
 def read_root(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    import traceback
+    try:
+        return templates.TemplateResponse("home.html", {"request": request})
+    except Exception as e:
+        with open("logs/root_error.txt", "w") as f:
+            f.write(traceback.format_exc())
+        raise e
 
 @app.get("/mean_reversion")
 def read_mean_reversion(request: Request):
@@ -174,65 +244,66 @@ def read_mean_reversion(request: Request):
 def read_tma(request: Request):
     return templates.TemplateResponse("tma.html", {"request": request})
 
+@app.get("/backtest")
+def read_backtest(request: Request):
+    return templates.TemplateResponse("backtest.html", {"request": request})
+
 @app.get("/api/status")
 def get_status():
     return {
-        "swing": {
-            "active": engine_swing.active,
-            "status": engine_swing.status,
-            "market_data": engine_swing.market_data,
-            "logs": engine_swing.logs[:20]
-        },
-        "scalp": {
-            "active": engine_scalp.active,
-            "status": engine_scalp.status,
-            "market_data": engine_scalp.market_data,
-            "logs": engine_scalp.logs[:20]
-        },
-        "tma": {
-            "active": engine_tma.active,
-            "status": engine_tma.status,
-            "market_data": engine_tma.market_data,
-            "logs": engine_tma.logs[:20]
+        "mean_reversion": {},
+        "tma": {},
+        "btc_breakout_5m": {
+             "active": engine_btc_breakout_5m.active, 
+             "status": engine_btc_breakout_5m.status, 
+             "data": engine_btc_breakout_5m.market_data, 
+             "logs": engine_btc_breakout_5m.logs[:20]
         },
         "gold": {
-            "45m": {"active": engine_gold_45m.active, "status": engine_gold_45m.status, "data": engine_gold_45m.market_data, "logs": engine_gold_45m.logs[:5]},
-            "15m": {"active": engine_gold_15m.active, "status": engine_gold_15m.status, "data": engine_gold_15m.market_data, "logs": engine_gold_15m.logs[:5]},
-            "5m": {"active": engine_gold_5m.active, "status": engine_gold_5m.status, "data": engine_gold_5m.market_data, "logs": engine_gold_5m.logs[:5]},
+            "1h": {"active": engine_gold_1h.active, "status": engine_gold_1h.status, "data": engine_gold_1h.market_data, "logs": engine_gold_1h.logs[:20]},
+            "15m": {"active": engine_gold_15m.active, "status": engine_gold_15m.status, "data": engine_gold_15m.market_data, "logs": engine_gold_15m.logs[:20]},
+            "5m": {"active": engine_gold_5m.active, "status": engine_gold_5m.status, "data": engine_gold_5m.market_data, "logs": engine_gold_5m.logs[:20]},
         },
-        "account": engine_swing.account_info, # Sharing account info
+        "account": engine_btc_breakout_5m.account_info, 
         "config": {
-            "agent_url": engine_swing.agent_url,
+            "agent_url": engine_btc_breakout_5m.agent_url,
             "risk": settings.RISK_PERCENT,
-            "telegram_connected": bool(engine_swing.notifier and engine_swing.notifier.chat_id)
+            "telegram_connected": bool(engine_btc_breakout_5m.notifier and engine_btc_breakout_5m.notifier.chat_id)
         }
     }
+
 
 @app.post("/api/control")
 async def control_bot(req: ControlRequest):
     if req.action == "start":
-        if req.target in ["swing", "all"]:
-            engine_swing.start()
-        if req.target in ["scalp", "all"]:
-            engine_scalp.start()
-        if req.target in ["tma", "all"]:
-            engine_tma.start()
+        # Mean Reversion & TMA Logic Removed
+        
+        # Breakout Control
+        if req.target == "btc_breakout_5m": engine_btc_breakout_5m.start()
+        
+        # Gold Support
         if req.target in ["gold", "all"]:
-            engine_gold_45m.start()
+            engine_gold_1h.start()
             engine_gold_15m.start()
             engine_gold_5m.start()
+        elif req.target == "gold_1h": engine_gold_1h.start()
+        elif req.target == "gold_15m": engine_gold_15m.start()
+        elif req.target == "gold_5m": engine_gold_5m.start()
             
     elif req.action == "stop":
-        if req.target in ["swing", "all"]:
-            engine_swing.stop()
-        if req.target in ["scalp", "all"]:
-            engine_scalp.stop()
-        if req.target in ["tma", "all"]:
-            engine_tma.stop()
+        # Mean Reversion & TMA Logic Removed
+
+        # Breakout Control
+        if req.target == "btc_breakout_5m": engine_btc_breakout_5m.stop()
+
+        # Gold Support
         if req.target in ["gold", "all"]:
-            engine_gold_45m.stop()
+            engine_gold_1h.stop()
             engine_gold_15m.stop()
             engine_gold_5m.stop()
+        elif req.target == "gold_1h": engine_gold_1h.stop()
+        elif req.target == "gold_15m": engine_gold_15m.stop()
+        elif req.target == "gold_5m": engine_gold_5m.stop()
             
     return {"status": "ok"}
 
@@ -256,15 +327,63 @@ def update_env_file(key, value):
         if not found:
             f.write(f"{key}=\"{value}\"\n")
 
+class BacktestRequest(BaseModel):
+    strategy: str
+    symbol: str
+    timeframe: str
+    balance: float
+    days: int
+
+@app.post("/api/backtest")
+async def run_backtest(req: BacktestRequest):
+    import traceback
+    try:
+        # 1. Fetch Data
+        engine = BacktestEngine(agent_url=engine_btc_breakout_5m.agent_url)
+        # Calculate timestamps (From Yesterday Backwards)
+        now = datetime.now()
+        yesterday = now - pd.Timedelta(days=1)
+        end_ts = int(yesterday.timestamp())
+        start_ts = int((yesterday - pd.Timedelta(days=req.days)).timestamp())
+        
+        # Log for debugging
+        print(f"Backtest: {req.symbol} {req.timeframe} Days={req.days} (From {yesterday.date()} back)")
+        
+        df = await engine.get_data(req.symbol, req.timeframe, start_ts, end_ts)
+
+        if df.empty:
+            return {"error": "No data found for this period."}
+            
+        # 2. Select Strategy
+        strat = None
+        if req.strategy == "BitcoinBreakout": strat = BitcoinBreakout
+        # Gold Strategies
+        elif req.strategy == "GoldTrend": strat = GoldTrend
+        elif req.strategy == "GoldSniper": strat = GoldSniper
+        elif req.strategy == "GoldFlux": strat = GoldFlux
+        
+        if not strat: return {"error": "Invalid Strategy"}
+        
+        # 3. Run Simulation
+        result = engine.run(strat, df, start_balance=req.balance)
+        return result
+    except Exception as e:
+        err_msg = traceback.format_exc()
+        with open("logs/backtest_error.log", "w") as f:
+            f.write(err_msg)
+        return {"error": f"Internal Error: {str(e)}"}
+
 @app.post("/api/settings")
 def update_settings(req: SettingsRequest):
     # 1. Update In-Memory Config (Immediate Effect)
-    engine_swing.set_agent_url(req.agent_url)
-    engine_scalp.set_agent_url(req.agent_url)
-    engine_tma.set_agent_url(req.agent_url) 
-    engine_gold_45m.set_agent_url(req.agent_url)
+    # Mean Reversion & TMA Removed
+    # Breakout
+    engine_btc_breakout_5m.set_agent_url(req.agent_url)
+    # Gold
+    engine_gold_1h.set_agent_url(req.agent_url)
     engine_gold_15m.set_agent_url(req.agent_url)
     engine_gold_5m.set_agent_url(req.agent_url)
+    
     settings.RISK_PERCENT = req.risk
     settings.AGENT_URL = req.agent_url # Update pydantic model too
 
@@ -273,7 +392,7 @@ def update_settings(req: SettingsRequest):
     # Persisting RISK is optional but good practice if needed, focusing on IP per request
     # update_env_file("RISK_PERCENT", str(req.risk))
 
-    engine_swing.log(f"Settings updated: Agent={req.agent_url}")
+    engine_btc_breakout_5m.log(f"Settings updated: Agent={req.agent_url}")
     return {"status": "updated", "persisted": True}
 
 if __name__ == "__main__":

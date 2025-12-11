@@ -1,0 +1,419 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+    --bg-color: #050a14;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --accent-blue: #00aaff;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+}
+
+body {
+    background-color: #030303;
+    /* Deep Black */
+    background-image:
+        radial-gradient(circle at 50% 0%, #1a1a1a 0%, #000000 70%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    /* Fix alignment */
+    flex-direction: column;
+}
+
+/* Trend Visualizer */
+.trend-vis-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 150px;
+    height: 150px;
+    z-index: 50;
+    pointer-events: none;
+    transition: all 0.5s ease;
+    opacity: 0;
+    /* Hidden by default */
+}
+
+.trend-vis-container.visible {
+    opacity: 1;
+}
+
+.trend-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+
+/* Bull Animation: Bounce + Cyan Glow */
+.trend-bull img {
+    animation: bullBounce 1s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.6));
+}
+
+@keyframes bullBounce {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        transform: translateY(-10px) scale(1.05);
+    }
+}
+
+/* Bear Animation: Shake + Red Glow */
+.trend-bear img {
+    animation: bearShake 2s infinite ease-in-out;
+    filter: drop-shadow(0 0 20px rgba(255, 50, 50, 0.6));
+}
+
+@keyframes bearShake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-5deg);
+    }
+
+    75% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Glassmorphism Card */
+.bw-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: all 0.3s ease;
+}
+
+.bw-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px 0 rgba(0, 170, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Headers */
+h1,
+h2,
+h3 {
+    letter-spacing: -0.02em;
+}
+
+/* Typography */
+.brand-text {
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(to right, #fff, #00aaff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Buttons */
+.btn-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-toggle:hover {
+    background: rgba(0, 170, 255, 0.2);
+    border-color: #00aaff;
+}
+
+.btn-toggle.active {
+    background: #00aaff;
+    border-color: #00aaff;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0, 170, 255, 0.5);
+}
+
+.btn-stop-all {
+    background: rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    color: #fca5a5;
+    transition: all 0.3s ease;
+}
+
+.btn-stop-all:hover {
+    background: rgba(220, 38, 38, 0.8);
+    color: white;
+}
+
+/* Mode Cards */
+.mode-card {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card.active {
+    border-color: #fff;
+    background: #000;
+}
+
+.mode-card.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #fff;
+}
+
+/* Data Tables */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+
+
+tr:hover td {
+    background: #1a1a1a;
+}
+
+/* Logs */
+.log-container {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.log-entry {
+    border-left: 1px solid #333;
+    padding-left: 10px;
+    margin-bottom: 4px;
+}
+
+.log-entry:first-child {
+    color: #fff;
+    border-left-color: #fff;
+}
+
+/* Animations */
+@keyframes stripe-move {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 40px 40px;
+    }
+}
+
+.animate-bg {
+    animation: stripe-move 5s linear infinite;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    margin-right: 8px;
+}
+
+.status-active {
+    background: #fff;
+    box-shadow: 0 0 10px #fff;
+}
+
+.status-stopped {
+    background: #333;
+}
+
+.status-signal {
+    background: #fff;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
+}
+
+/* --- Crypto Game UI Updates --- */
+
+/* Hero Typography */
+.hero-title {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    position: relative;
+    display: inline-block;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
+    margin-bottom: 1rem;
+}
+
+/* Glitch Effect */
+.glitch {
+    position: relative;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-color);
+    /* Matches bg */
+}
+
+.glitch::before {
+    left: 2px;
+    text-shadow: -1px 0 #ff00c1;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim 5s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+    left: -2px;
+    text-shadow: -1px 0 #00fff9;
+    clip: rect(44px, 450px, 56px, 0);
+    animation: glitch-anim2 5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+    0% {
+        clip: rect(31px, 9999px, 94px, 0);
+    }
+
+    4.16% {
+        clip: rect(91px, 9999px, 43px, 0);
+    }
+
+    8.33% {
+        clip: rect(6px, 9999px, 86px, 0);
+    }
+
+    12.5% {
+        clip: rect(38px, 9999px, 34px, 0);
+    }
+
+    16.66% {
+        clip: rect(89px, 9999px, 7px, 0);
+    }
+
+    20.83% {
+        clip: rect(26px, 9999px, 35px, 0);
+    }
+
+    100% {
+        clip: rect(67px, 9999px, 66px, 0);
+    }
+}
+
+@keyframes glitch-anim2 {
+    0% {
+        clip: rect(65px, 9999px, 100px, 0);
+    }
+
+    100% {
+        clip: rect(10px, 9999px, 83px, 0);
+    }
+}
+
+/* 3D Tilt Card */
+.tilt-card {
+    will-change: transform;
+    transform-style: preserve-3d;
+    transform: perspective(1000px);
+}
+
+.tilt-content {
+    transform: translateZ(30px);
+    /* Text floats slightly */
+    pointer-events: none;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* UI Transitions */
+.page-transition-wrapper {
+    transition: all 0.5s ease-in-out;
+}
+
+@keyframes slideOutLeft {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    100% {
+        transform: translateX(-50px) scale(0.9);
+        opacity: 0;
+        filter: blur(5px);
+    }
+}
+
+@keyframes slideInRight {
+    0% {
+        transform: translateX(50px) scale(0.9);
+        opacity: 0;
+        filter: blur(5px);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+.page-exit {
+    animation: slideOutLeft 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-enter {
+    animation: slideInRight 0.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure container has perspective? Optional. */
+body {
+    overflow-x: hidden;
+    /* Prevent scrollbar during slide */
+}

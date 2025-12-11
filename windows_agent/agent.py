@@ -1,12 +1,55 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import MetaTrader5 as mt5
 import pandas as pd
 from datetime import datetime
 import uvicorn
 import os
+import json
+import urllib.request
+import urllib.error
+import traceback
+
+# CONFIGURATION
+# Set this to the IP of your Ubuntu Backend, e.g., "http://192.168.1.100:8000"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://192.168.122.1:8001") 
 
 app = FastAPI(title="MT5 Windows Agent")
+
+def log_to_backend(level: str, message: str, context: dict = {}):
+    """Sends logs to the main backend for centralized viewing."""
+    try:
+        if "192.168.1.X" in BACKEND_URL:
+            print(f"[LOCAL LOG] [{level}] {message} (Backend URL not configured)")
+            return
+
+        url = f"{BACKEND_URL}/api/agent/log"
+        payload = {
+            "level": level,
+            "message": str(message),
+            "context": context
+        }
+        
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        
+        with urllib.request.urlopen(req, timeout=2) as response:
+            pass # Success
+            
+    except Exception as e:
+        print(f"[LOG FAILURE] Could not send log to backend: {e}")
+        print(f"[ORIGINAL MSG] {message}")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = f"Global Exception: {str(exc)}"
+    log_to_backend("ERROR", error_msg, {"path": request.url.path, "trace": traceback.format_exc()})
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error", "detail": str(exc)},
+    )
+
 
 # Pydantic models for request bodies
 class TradeRequest(BaseModel):
@@ -16,6 +59,7 @@ class TradeRequest(BaseModel):
     price: float  # Limit price
     sl: float
     tp: float
+    deviation: int = 20
     order_type: str = "limit" # "limit" or "market"
 
 class InitResponse(BaseModel):
@@ -30,10 +74,13 @@ def read_root():
 @app.post("/init")
 def initialize_mt5():
     if not mt5.initialize():
-        raise HTTPException(status_code=500, detail=f"initialize() failed, error code = {mt5.last_error()}")
+        error_code = mt5.last_error()
+        log_to_backend("CRITICAL", f"MT5 Initialize Failed: {error_code}")
+        raise HTTPException(status_code=500, detail=f"initialize() failed, error code = {error_code}")
     
     version = mt5.version()
     terminal_info = mt5.terminal_info()._asdict()
+    log_to_backend("INFO", "MT5 Initialized Successfully", {"version": version})
     return {"status": True, "version": version, "terminal_info": terminal_info}
 
 @app.get("/account")
@@ -57,9 +104,7 @@ def get_candles(symbol: str, timeframe: str, n: int = 100):
         "1m": mt5.TIMEFRAME_M1,
         "5m": mt5.TIMEFRAME_M5,
         "15m": mt5.TIMEFRAME_M15,
-        "45m": mt5.TIMEFRAME_M2, # MT5 doesn't have native M45 enum in older builds, usually TIMEFRAME_M45. 
-        # Checking MT5 docs: TIMEFRAME_M45 is standard in Python API 5.0.25+
-        "45m": mt5.TIMEFRAME_M45, 
+        "15m": mt5.TIMEFRAME_M15,
         "30m": mt5.TIMEFRAME_M30,
         "1h": mt5.TIMEFRAME_H1,
         "4h": mt5.TIMEFRAME_H4,
@@ -113,6 +158,24 @@ def execute_trade(trade: TradeRequest):
         type_order = mt5.ORDER_TYPE_BUY if trade.action == "buy" else mt5.ORDER_TYPE_SELL
         # For Market, we must use current Ask/Bid
         price = symbol_info.ask if trade.action == "buy" else symbol_info.bid
+
+    # Determine Filling Mode
+    filling_mode = mt5.ORDER_FILLING_FOK # Default
+    
+    # Check what the symbol supports
+    # Symbol Info filling_mode flags: 1 (FOK), 2 (IOC) => 3 (Both)
+    try:
+        fill_flags = symbol_info.filling_mode
+        if fill_flags == 1:
+            filling_mode = mt5.ORDER_FILLING_FOK
+        elif fill_flags == 2:
+            filling_mode = mt5.ORDER_FILLING_IOC
+        elif fill_flags == 3: # Both
+            filling_mode = mt5.ORDER_FILLING_FOK 
+        else:
+            filling_mode = mt5.ORDER_FILLING_IOC # Safe fallback
+    except:
+        filling_mode = mt5.ORDER_FILLING_IOC
     
     request = {
         "action": action,
@@ -126,7 +189,7 @@ def execute_trade(trade: TradeRequest):
         "magic": 234000,
         "comment": "MeanReversalRSI Bot",
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_RETURN, # Fill or Kill often fails, Return is safer
+        "type_filling": filling_mode, 
     }
     
     result = mt5.order_send(request)

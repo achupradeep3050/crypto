@@ -15,7 +15,7 @@ class DEMASuTBBStrategy:
         # Fixed Lot Size for GOLD
         self.fixed_lot = 0.02
 
-    def calculate_indicators(self, df):
+    def calculate_indicators(self, df, *args, **kwargs):
         if df.empty: return df
         
         # 1. DEMA 200

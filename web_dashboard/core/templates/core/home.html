@@ -1,448 +1,358 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MR_RSI // HOME</title>
+    <title>Quant Dashboard | 6-Card Grid</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505;
+            color: #e5e5e5;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .bw-card {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .bw-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 2px;
+        }
+
+        .brand-text {
+            letter-spacing: -0.05em;
+        }
+    </style>
 </head>
 
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
+<body class="overflow-x-hidden min-h-screen p-6">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUANT SYSTEMS // SPA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-</head>
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-8 max-w-[1800px] mx-auto">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-cubes text-2xl text-white"></i>
+            <h1 class="text-2xl font-bold tracking-tighter">QUANT<span class="text-gray-500">SYSTEMS</span></h1>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="openSettings()"
+                class="text-xs bg-gray-900 hover:bg-gray-800 px-3 py-2 rounded text-gray-400 font-mono border border-gray-800">
+                <i class="fas fa-cog mr-1"></i> CONFIG
+            </button>
+            <button onclick="stopAll()"
+                class="text-xs bg-red-900/20 hover:bg-red-900/40 px-3 py-2 rounded text-red-500 font-bold border border-red-900/50">
+                HALT SYSTEM
+            </button>
+        </div>
+    </header>
 
-<body class="bg-black text-white font-sans overflow-hidden">
+    <!-- Global Backtest Controls -->
+    <div
+        class="max-w-[1800px] mx-auto mb-6 bg-gray-900/50 border border-gray-800 rounded-lg p-4 flex flex-wrap gap-4 items-center">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-flask text-purple-500"></i>
+            <span class="text-sm font-bold text-gray-300">SIMULATION</span>
+        </div>
+        <div class="h-6 w-px bg-gray-700 mx-2"></div>
 
-    <!-- Fixed Navigation -->
-    <nav
-        class="fixed top-0 w-full z-50 flex justify-center gap-6 border-b border-gray-800/50 bg-black/50 backdrop-blur-md py-4 transition-all duration-300">
-        <a href="#hero"
-            class="text-white hover:text-cyan-400 font-bold text-xs tracking-wider uppercase transition">Home</a>
-        <a href="#mean-reversion-section"
-            class="text-gray-500 hover:text-cyan-400 font-bold text-xs tracking-wider uppercase transition">Mean
-            Reversion</a>
-        <a href="#tma-section"
-            class="text-gray-500 hover:text-pink-400 font-bold text-xs tracking-wider uppercase transition">TMA
-            System</a>
-        <a href="#gold-section"
-            class="text-gray-500 hover:text-yellow-400 font-bold text-xs tracking-wider uppercase transition">GOLD
-            System</a>
-    </nav>
+        <!-- Inputs -->
+        <div class="flex items-center gap-3">
+            <div class="flex flex-col">
+                <label class="text-[9px] uppercase text-gray-500 font-bold mb-1">Capital ($)</label>
+                <input id="backtestCapital" type="number" value="1000"
+                    class="bg-black border border-gray-700 rounded px-2 py-1 text-xs text-white w-24 font-mono">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] uppercase text-gray-500 font-bold mb-1">Days (Past)</label>
+                <input id="backtestDays" type="number" value="30"
+                    class="bg-black border border-gray-700 rounded px-2 py-1 text-xs text-white w-16 font-mono">
+            </div>
+        </div>
 
-    <!-- Main Scroll Container -->
-    <main class="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth relative no-scrollbar">
+        <button onclick="runGlobalBacktest()"
+            class="ml-auto bg-purple-900/40 hover:bg-purple-800 border border-purple-600 text-purple-300 text-xs font-bold px-4 py-2 rounded transition flex items-center gap-2">
+            <i class="fas fa-play"></i> RUN ANALYSIS
+        </button>
+    </div>
 
-        <!-- SECTION 1: HERO -->
-        <section id="hero" class="h-screen w-full snap-start flex flex-col items-center justify-center relative px-6">
+    <!-- Grid Container -->
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1800px] mx-auto pb-20">
 
-            <div class="flex flex-col items-center mb-12 stagger-enter w-full text-center mt-20">
-                <h1 class="hero-title glitch text-6xl md:text-8xl font-black mb-6 tracking-tighter"
-                    data-text="QUANT SYSTEMS">QUANT SYSTEMS</h1>
-                <div class="h-1 w-24 bg-cyan-500 mb-6 rounded-full shadow-[0_0_15px_#06b6d4]"></div>
-                <p class="text-gray-400 tracking-[0.8em] uppercase text-xs md:text-sm font-bold glow-text opacity-80">
-                    Autonomous • Trading • Intelligence</p>
+        <!-- CARD 1: BTC BREAKOUT (5m) -->
+        <div class="bw-card p-5 flex flex-col h-full border-green-500/20">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-800 pb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-green-400">BTC BREAKOUT</h2>
+                    <div class="text-[10px] text-gray-500 font-mono">5M · MOMENTUM · 325% ROI</div>
+                </div>
+                <!-- Status & Action -->
+                <div class="text-right">
+                    <div id="status-btc-breakout-5m" class="text-[10px] uppercase font-bold text-gray-600 mb-1">OFFLINE
+                    </div>
+                    <button id="btn-btc-breakout-5m" onclick="toggleBot('btc_breakout_5m', 'start')"
+                        class="text-[10px] px-2 py-1 bg-gray-800 hover:bg-green-900 text-gray-300 rounded border border-gray-700">ACTIVATE</button>
+                </div>
             </div>
 
-            <!-- Navigation Cards (Scroll Triggers) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 stagger-enter w-full max-w-6xl">
-                <!-- Card 1: Mean Reversion -->
-                <a href="#mean-reversion-section"
-                    class="bw-card p-10 hover:bg-white/5 transition duration-500 group cursor-pointer block tilt-card relative overflow-hidden h-72 flex flex-col justify-center items-center text-center">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500">
-                    </div>
-                    <div
-                        class="mb-4 text-cyan-400 text-6xl group-hover:scale-110 transition duration-500 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">
-                        <i class="fas fa-layer-group"></i>
-                    </div>
-                    <h2
-                        class="text-3xl font-black text-white mb-2 tracking-tighter group-hover:text-cyan-300 transition">
-                        MEAN REVERSION</h2>
-                    <p class="text-gray-400 text-xs font-mono opacity-80">Dual-Engine System (Swing + Scalp)</p>
-                </a>
-
-                <!-- Card 2: TMA -->
-                <a href="#tma-section"
-                    class="bw-card p-10 hover:bg-white/5 transition duration-500 group cursor-pointer block tilt-card relative overflow-hidden h-72 flex flex-col justify-center items-center text-center">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500">
-                    </div>
-                    <div
-                        class="mb-4 text-pink-400 text-6xl group-hover:scale-110 transition duration-500 drop-shadow-[0_0_15px_rgba(244,114,182,0.8)]">
-                        <i class="fas fa-wave-square"></i>
-                    </div>
-                    <h2
-                        class="text-3xl font-black text-white mb-2 tracking-tighter group-hover:text-pink-300 transition">
-                        TMA SYSTEM</h2>
-                    <p class="text-gray-400 text-xs font-mono opacity-80">Trend Pullback System (15m)</p>
-                </a>
-
-                <!-- Card 3: GOLD -->
-                <a href="#gold-section"
-                    class="bw-card p-10 hover:bg-white/5 transition duration-500 group cursor-pointer block tilt-card relative overflow-hidden h-72 flex flex-col justify-center items-center text-center">
-                    <div
-                        class="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition duration-500">
-                    </div>
-                    <div
-                        class="mb-4 text-yellow-400 text-6xl group-hover:scale-110 transition duration-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                    <h2
-                        class="text-3xl font-black text-white mb-2 tracking-tighter group-hover:text-yellow-300 transition">
-                        GOLD SYSTEM</h2>
-                    <p class="text-gray-400 text-xs font-mono opacity-80">Fib BB + DEMA + SuperTrend</p>
-                </a>
-            </div>
-
-            <!-- Scroll Indicator -->
-            <div class="absolute bottom-10 animate-bounce text-gray-500 text-xs uppercase tracking-widest">
-                Scroll Down <i class="fas fa-chevron-down ml-2"></i>
-            </div>
-        </section>
-
-        <!-- SECTION 2: MEAN REVERSION DASHBOARD -->
-        <section id="mean-reversion-section"
-            class="h-screen w-full snap-start flex flex-col items-center justify-center relative px-6 pt-20">
-            <div class="w-full max-w-7xl flex flex-col gap-6">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-layer-group text-3xl text-cyan-400"></i>
-                        <div>
-                            <h1 class="brand-text text-2xl">MEANREVRSI // DUAL</h1>
-                            <div class="text-xs tracking-widest uppercase text-gray-500">Mult-Strategy System</div>
-                        </div>
-                    </div>
-                    <button onclick="stopAll()"
-                        class="btn-stop-all px-4 py-2 rounded font-bold text-xs uppercase tracking-wider">HALT ALL
-                        SYSTEMS</button>
+            <!-- Major Metrics -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Price</div>
+                    <div id="price-btc-breakout-5m" class="text-lg font-mono text-white">--.--</div>
                 </div>
-
-                <!-- SWING System -->
-                <div class="bw-card p-6">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                        <div class="flex items-center gap-3">
-                            <div id="ind-swing" class="status-indicator"></div>
-                            <h2 class="text-xl font-bold text-white">SWING STRATEGY</h2>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span id="status-swing" class="text-xs uppercase text-gray-500">Standby</span>
-                            <button id="btn-swing" onclick="toggleBot('swing', 'start')"
-                                class="btn-toggle px-4 py-1 rounded text-xs font-bold uppercase">Activate</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-12 gap-6">
-                        <div class="col-span-12 lg:col-span-8">
-                            <table class="w-full text-left text-sm text-gray-400">
-                                <thead class="text-xs uppercase border-b border-gray-800 text-cyan-500">
-                                    <tr>
-                                        <th class="py-2">Asset</th>
-                                        <th class="py-2">Price</th>
-                                        <th class="py-2">RSI</th>
-                                        <th class="py-2">Trend</th>
-                                        <th class="py-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-swing"></tbody>
-                            </table>
-                        </div>
-                        <div class="col-span-12 lg:col-span-4">
-                            <div id="logs-swing"
-                                class="h-32 overflow-y-auto custom-scrollbar text-xs font-mono text-gray-500 bg-black/20 p-2 rounded">
-                                <div>Ready.</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">ADX</div>
+                    <div id="adx-btc-breakout-5m" class="text-lg font-mono text-white">--</div>
                 </div>
-
-                <!-- SCALP System -->
-                <div class="bw-card p-6">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                        <div class="flex items-center gap-3">
-                            <div id="ind-scalp" class="status-indicator"></div>
-                            <h2 class="text-xl font-bold text-white">SCALP STRATEGY</h2>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span id="status-scalp" class="text-xs uppercase text-gray-500">Standby</span>
-                            <button id="btn-scalp" onclick="toggleBot('scalp', 'start')"
-                                class="btn-toggle px-4 py-1 rounded text-xs font-bold uppercase">Activate</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-12 gap-6">
-                        <div class="col-span-12 lg:col-span-8">
-                            <table class="w-full text-left text-sm text-gray-400">
-                                <thead class="text-xs uppercase border-b border-gray-800 text-cyan-500">
-                                    <tr>
-                                        <th class="py-2">Asset</th>
-                                        <th class="py-2">Price</th>
-                                        <th class="py-2">RSI</th>
-                                        <th class="py-2">Trend</th>
-                                        <th class="py-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-scalp"></tbody>
-                            </table>
-                        </div>
-                        <div class="col-span-12 lg:col-span-4">
-                            <div id="logs-scalp"
-                                class="h-32 overflow-y-auto custom-scrollbar text-xs font-mono text-gray-500 bg-black/20 p-2 rounded">
-                                <div>Ready.</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Signal</div>
+                    <div id="signal-btc-breakout-5m" class="text-lg font-bold text-gray-500">--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Range High</div>
+                    <div id="high-btc-breakout-5m" class="text-lg font-mono text-green-500/50">--</div>
                 </div>
             </div>
-        </section>
 
-        <!-- SECTION 3: TMA DASHBOARD -->
-        <section id="tma-section"
-            class="h-screen w-full snap-start flex flex-col items-center justify-center relative px-6 pt-20">
-            <div class="w-full max-w-7xl flex flex-col gap-6">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-wave-square text-3xl text-pink-400"></i>
-                        <div>
-                            <h1 class="brand-text text-2xl">TMA SYSTEM</h1>
-                            <div class="text-xs tracking-widest uppercase text-pink-400">Triple Moving Average + CMO +
-                                ADX</div>
-                        </div>
-                    </div>
-                    <button onclick="stopAll()"
-                        class="btn-stop-all px-4 py-2 rounded font-bold text-xs uppercase tracking-wider">HALT
-                        SYSTEM</button>
-                </div>
-
-                <!-- TMA Card -->
-                <div class="bw-card p-6">
-                    <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                        <div class="flex items-center gap-3">
-                            <div id="ind-tma" class="status-indicator"></div>
-                            <h2 class="text-xl font-bold text-white">TMA ENGINE</h2>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span id="status-tma" class="text-xs uppercase text-gray-500">Standby</span>
-                            <button id="btn-tma" onclick="toggleBot('tma', 'start')"
-                                class="btn-toggle px-4 py-1 rounded text-xs font-bold uppercase">Activate</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-12 gap-6">
-                        <div class="col-span-12 lg:col-span-8">
-                            <table class="w-full text-left text-sm text-gray-400">
-                                <thead class="text-xs uppercase border-b border-gray-800 text-pink-500">
-                                    <tr>
-                                        <th class="py-2">Asset</th>
-                                        <th class="py-2">Price</th>
-                                        <th class="py-2">TEMA</th>
-                                        <th class="py-2">CMO</th>
-                                        <th class="py-2">ADX</th>
-                                        <th class="py-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-tma"></tbody>
-                            </table>
-                        </div>
-                        <div class="col-span-12 lg:col-span-4">
-                            <div id="logs-tma"
-                                class="h-48 overflow-y-auto custom-scrollbar text-xs font-mono text-gray-500 bg-black/20 p-2 rounded">
-                                <div>Initializing TMA Module...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Account Info -->
-                <div class="bw-card p-4 flex justify-between items-center text-sm">
-                    <div class="text-gray-500">Account Balance: <span id="val-balance"
-                            class="text-white font-mono text-lg ml-2">$ --.--</span></div>
-                    <div class="text-gray-500">Equity: <span id="val-equity" class="text-white font-mono text-lg ml-2">$
-                            --.--</span></div>
-                </div>
-
-                <!-- NEW: Configuration Settings -->
-                <div class="bw-card p-6 mt-6 border-t border-gray-800">
-                    <div class="flex items-center gap-3 mb-4">
-                        <i class="fas fa-cog text-xl text-gray-400"></i>
-                        <h2 class="text-xl font-bold text-white">SYSTEM CONFIGURATION</h2>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- IP Configuration -->
-                        <div class="flex flex-col gap-2">
-                            <label class="text-xs uppercase text-gray-500 font-bold">Windows Agent IP</label>
-                            <div class="flex gap-2">
-                                <input id="input-agent-ip" type="text" placeholder="192.168.122.121"
-                                    class="bg-black/40 border border-gray-700 text-white text-sm rounded px-3 py-2 w-full focus:outline-none focus:border-cyan-500 transition font-mono">
-                            </div>
-                            <p class="text-[10px] text-gray-600">Enter the IP address only (e.g. 192.168.1.50). Port
-                                8001 is automatic.</p>
-                        </div>
-
-                        <!-- Risk Configuration -->
-                        <div class="flex flex-col gap-2">
-                            <label class="text-xs uppercase text-gray-500 font-bold">Risk Per Trade (%)</label>
-                            <input id="input-risk" type="number" step="0.1" placeholder="2.5"
-                                class="bg-black/40 border border-gray-700 text-white text-sm rounded px-3 py-2 w-full focus:outline-none focus:border-cyan-500 transition font-mono">
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="updateSettings()"
-                            class="bg-gray-800 hover:bg-cyan-600 text-white px-6 py-2 rounded text-xs font-bold uppercase tracking-wider transition duration-300">
-                            Update Configuration
-                        </button>
-                    </div>
-                </div>
-
+            <!-- Logs -->
+            <div id="logs-btc-breakout-5m"
+                class="bg-black/40 h-24 overflow-y-auto custom-scrollbar text-[10px] font-mono p-2 rounded text-gray-500 mb-3 flex-grow">
+                Log stream...
             </div>
-        </section>
 
-        <!-- SECTION 4: GOLD DEMASuTBB DASHBOARD -->
-        <section id="gold-section"
-            class="h-screen w-full snap-start flex flex-col items-center justify-center relative px-6 pt-20">
-            <div class="w-full max-w-7xl flex flex-col gap-6">
-                <!-- Header -->
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-coins text-3xl text-yellow-400"></i>
-                        <div>
-                            <h1 class="brand-text text-2xl">GOLD // DEMASuTBB</h1>
-                            <div class="text-xs tracking-widest uppercase text-yellow-500">Fib BB + 200 DEMA +
-                                SuperTrend</div>
-                        </div>
-                    </div>
-                    <!-- Master Control for Gold -->
-                    <button onclick="toggleBot('gold', 'start')"
-                        class="px-4 py-2 border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black rounded font-bold text-xs uppercase tracking-wider transition">
-                        ACTIVATE ALL TIMEFRAMES
-                    </button>
+            <!-- Backtest Mini -->
+            <div
+                class="bg-green-900/10 border border-green-900/20 p-2 rounded flex justify-between items-center text-xs">
+                <span class="text-green-500 font-bold">ROI (30D)</span>
+                <span id="pnl-btc-breakout-5m" class="font-mono text-white">--</span>
+            </div>
+        </div>
+
+
+        <!-- CARD 2: BTC MEAN REVERSION (REMOVED) -->
+
+
+        <!-- CARD 3: TMA SYSTEM (REMOVED) -->
+
+
+        <!-- CARD 4: GOLD TREND (1H) -->
+        <div class="bw-card p-5 flex flex-col h-full border-yellow-500/20">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-800 pb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-yellow-500">GOLD TREND</h2>
+                    <div class="text-[10px] text-gray-500 font-mono">1H · SWING · STABLE</div>
                 </div>
-
-                <!-- GOLD Engines Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                    <!-- 45m Engine -->
-                    <div class="bw-card p-4 relative overflow-hidden group">
-                        <div
-                            class="absolute top-0 right-0 p-2 opacity-50 text-6xl text-gray-800 font-black z-0 pointer-events-none">
-                            45m</div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                                <h3 class="font-bold text-white">TIMEFRAME 45m</h3>
-                                <div id="ind-gold-45m"
-                                    class="w-3 h-3 rounded-full bg-gray-600 shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-500">
-                                </div>
-                            </div>
-                            <!-- Status -->
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-500">STATUS</span>
-                                <span id="status-gold-45m" class="font-mono text-gray-400">OFFLINE</span>
-                            </div>
-                            <!-- Data -->
-                            <div class="space-y-1 text-xs font-mono">
-                                <div class="flex justify-between"><span class="text-gray-600">PRICE</span><span
-                                        id="price-gold-45m" class="text-white">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">DEMA</span><span
-                                        id="dema-gold-45m" class="text-cyan-400">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">SUPER</span><span
-                                        id="super-gold-45m" class="text-green-500">--.--</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 15m Engine -->
-                    <div class="bw-card p-4 relative overflow-hidden group">
-                        <div
-                            class="absolute top-0 right-0 p-2 opacity-50 text-6xl text-gray-800 font-black z-0 pointer-events-none">
-                            15m</div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                                <h3 class="font-bold text-white">TIMEFRAME 15m</h3>
-                                <div id="ind-gold-15m"
-                                    class="w-3 h-3 rounded-full bg-gray-600 shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-500">
-                                </div>
-                            </div>
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-500">STATUS</span>
-                                <span id="status-gold-15m" class="font-mono text-gray-400">OFFLINE</span>
-                            </div>
-                            <div class="space-y-1 text-xs font-mono">
-                                <div class="flex justify-between"><span class="text-gray-600">PRICE</span><span
-                                        id="price-gold-15m" class="text-white">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">DEMA</span><span
-                                        id="dema-gold-15m" class="text-cyan-400">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">SUPER</span><span
-                                        id="super-gold-15m" class="text-green-500">--.--</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 5m Engine -->
-                    <div class="bw-card p-4 relative overflow-hidden group">
-                        <div
-                            class="absolute top-0 right-0 p-2 opacity-50 text-6xl text-gray-800 font-black z-0 pointer-events-none">
-                            5m</div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                                <h3 class="font-bold text-white">TIMEFRAME 5m</h3>
-                                <div id="ind-gold-5m"
-                                    class="w-3 h-3 rounded-full bg-gray-600 shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all duration-500">
-                                </div>
-                            </div>
-                            <div class="flex justify-between text-xs mb-2">
-                                <span class="text-gray-500">STATUS</span>
-                                <span id="status-gold-5m" class="font-mono text-gray-400">OFFLINE</span>
-                            </div>
-                            <div class="space-y-1 text-xs font-mono">
-                                <div class="flex justify-between"><span class="text-gray-600">PRICE</span><span
-                                        id="price-gold-5m" class="text-white">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">DEMA</span><span
-                                        id="dema-gold-5m" class="text-cyan-400">--.--</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600">SUPER</span><span
-                                        id="super-gold-5m" class="text-green-500">--.--</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Shared Logs -->
-                <div class="bw-card p-4">
-                    <h3 class="text-xs font-bold text-gray-500 mb-2">STRATEGY LOGS (ALL TIMEFRAMES)</h3>
-                    <div id="logs-gold"
-                        class="h-32 overflow-y-auto custom-scrollbar text-xs font-mono text-gray-500 bg-black/20 p-2 rounded">
-                        <div>Waiting for initialization...</div>
-                    </div>
+                <div class="text-right">
+                    <!-- Uses status-gold-1h which app.js updates via renderGold -->
+                    <div id="status-gold-1h" class="text-[10px] uppercase font-bold text-gray-600 mb-1">OFF</div>
+                    <button id="btn-gold-1h" onclick="toggleBot('gold_1h', 'start')"
+                        class="text-[10px] px-2 py-1 bg-gray-800 hover:bg-yellow-900 text-gray-300 rounded border border-gray-700">START</button>
                 </div>
             </div>
-        </section>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Price</div>
+                    <div id="price-gold-1h" class="text-sm font-mono text-white">--.--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">RSI Pattern</div>
+                    <div id="dema-gold-1h" class="text-sm font-mono text-white">--</div>
+                    <!-- app.js maps 'dema' ID to RSI col -->
+                </div>
+                <div class="bg-black/30 p-2 rounded col-span-2">
+                    <div class="text-[10px] text-gray-500 uppercase">ADX Filter</div>
+                    <div id="super-gold-1h" class="text-sm font-mono text-white">--</div>
+                    <!-- app.js maps 'super' ID to ADX col -->
+                </div>
+            </div>
+            <div class="text-[10px] text-gray-500 mb-3">
+                Log stream shared in 'logs-gold' for now...
+            </div>
+
+            <div
+                class="bg-yellow-900/10 border border-yellow-900/20 p-2 rounded flex justify-between items-center text-xs flex-grow-0 mt-auto">
+                <span class="text-yellow-500 font-bold">ROI (1H)</span>
+                <span id="pnl-gold-1h" class="font-mono text-white">--</span>
+            </div>
+        </div>
+
+
+        <!-- CARD 5: GOLD SNIPER (15m) -- THE STAR -->
+        <div
+            class="bw-card p-5 flex flex-col h-full ring-1 ring-yellow-400 border-yellow-400/40 shadow-[0_0_20px_rgba(250,204,21,0.1)]">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-800 pb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                        <i class="fas fa-crosshairs"></i> SNIPER
+                    </h2>
+                    <div class="text-[10px] text-gray-500 font-mono">15M · RSI(2) EXTREME · NEW</div>
+                </div>
+                <div class="text-right">
+                    <div id="status-gold-15m" class="text-[10px] uppercase font-bold text-gray-600 mb-1">OFF</div>
+                    <button id="btn-gold-15m" onclick="toggleBot('gold_15m', 'start')"
+                        class="text-[10px] px-2 py-1 bg-gray-800 hover:bg-yellow-500 hover:text-black text-white rounded border border-yellow-600 font-bold">ENGAGE</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Price</div>
+                    <div id="price-gold-15m" class="text-sm font-mono text-white">--.--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">RSI(2)</div>
+                    <div id="dema-gold-15m" class="text-xl font-mono text-white font-bold">--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded col-span-2">
+                    <div class="text-[10px] text-gray-500 uppercase">ADX</div>
+                    <div id="super-gold-15m" class="text-sm font-mono text-white">--</div>
+                </div>
+            </div>
+            <div id="logs-gold"
+                class="bg-black/40 h-24 overflow-y-auto custom-scrollbar text-[10px] font-mono p-2 rounded text-gray-500 flex-grow mb-3">
+                Gold System Logs...
+            </div>
+
+            <div
+                class="bg-yellow-900/10 border border-yellow-900/20 p-2 rounded flex justify-between items-center text-xs">
+                <span class="text-yellow-500 font-bold">ROI (15m)</span>
+                <span id="pnl-gold-15m" class="font-mono text-white">--</span>
+            </div>
+        </div>
+
+
+        <!-- CARD 6: GOLD FLUX (5m) -->
+        <div class="bw-card p-5 flex flex-col h-full border-yellow-500/20 opacity-75">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-800 pb-3">
+                <div>
+                    <h2 class="text-lg font-bold text-yellow-600">GOLD FLUX</h2>
+                    <div class="text-[10px] text-gray-500 font-mono">5M · SCALP · HIGH RISK</div>
+                </div>
+                <div class="text-right">
+                    <div id="status-gold-5m" class="text-[10px] uppercase font-bold text-gray-600 mb-1">OFF</div>
+                    <button id="btn-gold-5m" onclick="toggleBot('gold_5m', 'start')"
+                        class="text-[10px] px-2 py-1 bg-gray-800 hover:bg-yellow-900 text-gray-300 rounded border border-gray-700">START</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">Price</div>
+                    <div id="price-gold-5m" class="text-sm font-mono text-white">--.--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded">
+                    <div class="text-[10px] text-gray-500 uppercase">RSI</div>
+                    <div id="dema-gold-5m" class="text-sm font-mono text-white">--</div>
+                </div>
+                <div class="bg-black/30 p-2 rounded col-span-2">
+                    <div class="text-[10px] text-gray-500 uppercase">ADX</div>
+                    <div id="super-gold-5m" class="text-sm font-mono text-white">--</div>
+                </div>
+            </div>
+
+            <div
+                class="bg-yellow-900/10 border border-yellow-900/20 p-2 rounded flex justify-between items-center text-xs mt-auto">
+                <span class="text-yellow-500 font-bold">ROI (5m)</span>
+                <span id="pnl-gold-5m" class="font-mono text-white">--</span>
+            </div>
+        </div>
 
     </main>
 
-    <!-- Particles Background (Fixed) -->
-    <div id="particles-js" class="fixed inset-0 z-0 pointer-events-none opacity-40"></div>
-    <script src="{% static 'js/particles.min.js' %}"></script>
-    <script src="{% static 'js/app.js' %}"></script>
-    <script>
-        particlesJS.load('particles-js', '{% static "js/particles.json" %}', function () {
-            console.log('Particles Loaded');
-        });
-    </script>
-</body>
+    <!-- Modals (Settings, Trades) -->
+    <!-- Settings Modal -->
+    <div id="settings-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity z-50 flex items-center justify-center">
+        <div id="settings-content"
+            class="bg-gray-900 border border-gray-700 rounded-lg p-6 w-96 transform scale-95 transition-transform">
+            <h2 class="text-xl font-bold mb-4 text-white">System Config</h2>
+            <div class="mb-4">
+                <label class="block text-xs uppercase text-gray-400 mb-1">Agent IP</label>
+                <input id="input-agent-ip" type="text"
+                    class="w-full bg-black border border-gray-700 rounded p-2 text-white font-mono"
+                    placeholder="localhost">
+            </div>
+            <div class="mb-6">
+                <label class="block text-xs uppercase text-gray-400 mb-1">Risk %</label>
+                <input id="input-risk" type="number" step="0.1"
+                    class="w-full bg-black border border-gray-700 rounded p-2 text-white font-mono" placeholder="1.0">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="updateSettings()"
+                    class="flex-1 bg-green-700 hover:bg-green-600 text-white rounded py-2 font-bold text-sm">SAVE</button>
+                <button onclick="closeSettings()"
+                    class="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded py-2 font-bold text-sm">CANCEL</button>
+            </div>
+        </div>
+    </div>
 
-</html>
+    <!-- Trades Modal -->
+    <div id="trades-modal"
+        class="fixed inset-0 bg-black/90 backdrop-blur hidden opacity-0 transition-opacity z-50 flex items-center justify-center p-4">
+        <div id="trades-content"
+            class="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-4xl h-[80vh] flex flex-col transform scale-95 transition-transform">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="font-bold text-green-500">TRADE HISTORY</h3>
+                <button onclick="closeTrades()" class="text-gray-400 hover:text-white"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-auto custom-scrollbar p-4">
+                <table class="w-full text-left text-sm">
+                    <thead class="text-gray-500 uppercase text-xs border-b border-gray-800">
+                        <tr>
+                            <th class="p-2">Time</th>
+                            <th class="p-2">Type</th>
+                            <th class="p-2">Entry</th>
+                            <th class="p-2">Exit</th>
+                            <th class="p-2 text-right">PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-table-body" class="font-mono"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Init Script -->
+    <script src="/static/js/app.js"></script>
+    <!-- Add Global Status Variable Helper needed for app.js 'ind-' elements if missing, but we removed dots for Gold cards -->
+    <!-- Just in case, add hidden dummy elements if app.js throws errors looking for them -->
+    <div hidden>
+        <span id="ind-gold-1h"></span><span id="ind-gold-15m"></span><span id="ind-gold-5m"></span>
+        <span id="ind-mr-1h"></span><span id="ind-mr-15m"></span><span id="ind-mr-5m"></span>
+        <span id="ind-tma-1h"></span><span id="ind-tma-15m"></span><span id="ind-tma-5m"></span>
+    </div>
+</body>
 
 </html>

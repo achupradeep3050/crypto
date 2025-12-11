@@ -12,9 +12,24 @@ class Settings(BaseSettings):
         "4H1H": {"current": "1h", "higher": "4h"},
         "15m1m": {"current": "1m", "higher": "15m"},
         "4H15m": {"current": "15m", "higher": "4h"},
-        "GOLD_45m": {"current": "45m", "higher": None}, # Single timeframe strategy
-        "GOLD_15m": {"current": "15m", "higher": None},
-        "GOLD_5m": {"current": "5m", "higher": None}
+        
+        # Gold Modes
+        "GOLD_1H": {"current": "1h", "higher": None}, # Using 1h as single or with implicit higher
+        "GOLD_15M": {"current": "15m", "higher": None},
+        "GOLD_5M": {"current": "5m", "higher": None},
+
+        # Bitcoin MeanReversion Modes (Dual Timeframe Logic: Current + Higher)
+        "BTC_MR_1H": {"current": "1h", "higher": "4h"},
+        "BTC_MR_15M": {"current": "15m", "higher": "1h"},
+        "BTC_MR_5M": {"current": "5m", "higher": "15m"},
+
+        # Bitcoin TMA Modes (Dual Timeframe Logic)
+        "BTC_TMA_1H": {"current": "1h", "higher": "4h"},
+        "BTC_TMA_15M": {"current": "15m", "higher": "1h"},
+        "BTC_TMA_5M": {"current": "5m", "higher": "15m"},
+        
+        # Bitcoin Breakout (High ROI)
+        "BTC_BREAKOUT_5M": {"current": "5m", "higher": None} # Single TF Strategy
     }
     
     # Defaults (can be removed if unused, but keeping for safety)
