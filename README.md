@@ -174,4 +174,4 @@ This bot uses a confluence of 4 high-reliability indicators:
     -   Run pip with config path: `MARIADB_CONFIG=/usr/bin/mariadb_config pip install mariadb`
 
 ---
-*Created by Antigravity* 🚀
+*Created by Achu* 🚀
